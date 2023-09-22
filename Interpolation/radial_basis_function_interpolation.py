@@ -5,6 +5,8 @@ from scipy.interpolate import Rbf
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from matplotlib.path import Path
+
 # Generate some random data points
 data = pd.read_csv("lakecoords.csv")
 x = np.array(data["X"])
@@ -33,10 +35,36 @@ z_interp = interp(x_interp, y_interp).reshape(30, 42)
 
 # print(z_interp.reshape(30, 40))
 
-plt.matshow(z_interp)
+perimx = perimx.tolist()
+perimy = perimy.tolist()
+perimz = perimz.tolist()
+
+perimx = perimx + perimx[0:1]
+perimy = perimy + perimy[0:1]
+perimz = perimz + perimz[0:1]
+
+perimx = np.array(perimx)
+perimy = np.array(perimy)
+perimz = np.array(perimz)
+
+gridx = np.array([[x for _ in range(30)] for x in range(42)]).flatten()
+gridy = np.array([[29-y for y in range(30)] for _ in range(42)]).flatten()
+
+
+polygon_path = Path(np.column_stack([perimx, perimy]))
+mask = polygon_path.contains_points(np.column_stack([gridx, gridy]))
+mask = np.rot90(mask.reshape(42, 30).astype(float))
+z_final = z_interp * mask * 10
+
+#export as csv:
+df = pd.DataFrame(z_final)
+df.to_csv("lakesurface.csv")
+
+
+plt.matshow(z_final)
 plt.colorbar()
+plt.plot(perimx, perimy, linestyle='-', color='red', label='Lines')
 plt.scatter(perimx, perimy)
-plt.show()
 plt.show()
 
 # # Now, z_interp contains the interpolated values at the specified points
